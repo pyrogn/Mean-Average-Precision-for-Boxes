@@ -7,23 +7,29 @@ Code based on: https://github.com/fizyr/keras-retinanet/blob/master/keras_retina
 
 import numpy as np
 import pandas as pd
+
 try:
     import pyximport
-    pyximport.install(setup_args={"include_dirs": np.get_include()}, reload_support=False)
+
+    pyximport.install(
+        setup_args={"include_dirs": np.get_include()}, reload_support=False
+    )
     from .compute_overlap import compute_overlap
 except:
-    print("Couldn't import fast version of function compute_overlap, will use slow one. Check cython intallation")
+    print(
+        "Couldn't import fast version of function compute_overlap, will use slow one. Check cython intallation"
+    )
     from .compute_overlap_slow import compute_overlap
 
 
 def get_real_annotations(table):
     res = dict()
-    ids = table['ImageID'].values.astype(np.str)
-    labels = table['LabelName'].values.astype(np.str)
-    xmin = table['XMin'].values.astype(np.float32)
-    xmax = table['XMax'].values.astype(np.float32)
-    ymin = table['YMin'].values.astype(np.float32)
-    ymax = table['YMax'].values.astype(np.float32)
+    ids = table["ImageID"].values.astype(str)
+    labels = table["LabelName"].values.astype(str)
+    xmin = table["XMin"].values.astype(np.float32)
+    xmax = table["XMax"].values.astype(np.float32)
+    ymin = table["YMin"].values.astype(np.float32)
+    ymax = table["YMax"].values.astype(np.float32)
 
     for i in range(len(ids)):
         id = ids[i]
@@ -40,13 +46,13 @@ def get_real_annotations(table):
 
 def get_detections(table):
     res = dict()
-    ids = table['ImageID'].values.astype(np.str)
-    labels = table['LabelName'].values.astype(np.str)
-    scores = table['Conf'].values.astype(np.float32)
-    xmin = table['XMin'].values.astype(np.float32)
-    xmax = table['XMax'].values.astype(np.float32)
-    ymin = table['YMin'].values.astype(np.float32)
-    ymax = table['YMax'].values.astype(np.float32)
+    ids = table["ImageID"].values.astype(str)
+    labels = table["LabelName"].values.astype(str)
+    scores = table["Conf"].values.astype(np.float32)
+    xmin = table["XMin"].values.astype(np.float32)
+    xmax = table["XMax"].values.astype(np.float32)
+    ymin = table["YMin"].values.astype(np.float32)
+    ymax = table["YMax"].values.astype(np.float32)
 
     for i in range(len(ids)):
         id = ids[i]
@@ -62,7 +68,7 @@ def get_detections(table):
 
 
 def _compute_ap(recall, precision):
-    """ Compute the average precision, given the recall and precision curves.
+    """Compute the average precision, given the recall and precision curves.
 
     Code originally from https://github.com/rbgirshick/py-faster-rcnn.
 
@@ -74,8 +80,8 @@ def _compute_ap(recall, precision):
     """
     # correct AP calculation
     # first append sentinel values at the end
-    mrec = np.concatenate(([0.], recall, [1.]))
-    mpre = np.concatenate(([0.], precision, [0.]))
+    mrec = np.concatenate(([0.0], recall, [1.0]))
+    mpre = np.concatenate(([0.0], precision, [0.0]))
 
     # compute the precision envelope
     for i in range(mpre.size - 1, 0, -1):
@@ -90,7 +96,9 @@ def _compute_ap(recall, precision):
     return ap
 
 
-def mean_average_precision_for_boxes(ann, pred, iou_threshold=0.5, exclude_not_in_annotations=False, verbose=True):
+def mean_average_precision_for_boxes(
+    ann, pred, iou_threshold=0.5, exclude_not_in_annotations=False, verbose=True
+):
     """
 
     :param ann: path to CSV-file with annotations or numpy array of shape (N, 6)
@@ -104,42 +112,51 @@ def mean_average_precision_for_boxes(ann, pred, iou_threshold=0.5, exclude_not_i
     if isinstance(ann, str):
         valid = pd.read_csv(ann)
     else:
-        valid = pd.DataFrame(ann, columns=['ImageID', 'LabelName', 'XMin', 'XMax', 'YMin', 'YMax'])
+        valid = pd.DataFrame(
+            ann, columns=["ImageID", "LabelName", "XMin", "XMax", "YMin", "YMax"]
+        )
 
     if isinstance(pred, str):
         preds = pd.read_csv(pred)
     else:
-        preds = pd.DataFrame(pred, columns=['ImageID', 'LabelName', 'Conf', 'XMin', 'XMax', 'YMin', 'YMax'])
+        preds = pd.DataFrame(
+            pred,
+            columns=["ImageID", "LabelName", "Conf", "XMin", "XMax", "YMin", "YMax"],
+        )
 
-    ann_unique = valid['ImageID'].unique().astype(np.str)
-    preds_unique = preds['ImageID'].unique().astype(np.str)
+    ann_unique = valid["ImageID"].unique().astype(str)
+    preds_unique = preds["ImageID"].unique().astype(str)
 
     if verbose:
-        print('Number of files in annotations: {}'.format(len(ann_unique)))
-        print('Number of files in predictions: {}'.format(len(preds_unique)))
+        print("Number of files in annotations: {}".format(len(ann_unique)))
+        print("Number of files in predictions: {}".format(len(preds_unique)))
 
     # Exclude files not in annotations!
     if exclude_not_in_annotations:
-        preds = preds[preds['ImageID'].isin(ann_unique)]
-        preds_unique = preds['ImageID'].unique()
+        preds = preds[preds["ImageID"].isin(ann_unique)]
+        preds_unique = preds["ImageID"].unique()
         if verbose:
-            print('Number of files in detection after reduction: {}'.format(len(preds_unique)))
+            print(
+                "Number of files in detection after reduction: {}".format(
+                    len(preds_unique)
+                )
+            )
 
-    unique_classes = valid['LabelName'].unique().astype(np.str)
+    unique_classes = valid["LabelName"].unique().astype(str)
     if verbose:
-        print('Unique classes: {}'.format(len(unique_classes)))
+        print("Unique classes: {}".format(len(unique_classes)))
 
     all_detections = get_detections(preds)
     all_annotations = get_real_annotations(valid)
     if verbose:
-        print('Detections length: {}'.format(len(all_detections)))
-        print('Annotations length: {}'.format(len(all_annotations)))
+        print("Detections length: {}".format(len(all_detections)))
+        print("Annotations length: {}".format(len(all_annotations)))
 
     average_precisions = {}
     for zz, label in enumerate(sorted(unique_classes)):
 
         # Negative class
-        if str(label) == 'nan':
+        if str(label) == "nan":
             continue
 
         false_positives = []
@@ -173,11 +190,16 @@ def mean_average_precision_for_boxes(ann, pred, iou_threshold=0.5, exclude_not_i
                     true_positives.append(0)
                     continue
 
-                overlaps = compute_overlap(np.expand_dims(np.array(d, dtype=np.float64), axis=0), annotations)
+                overlaps = compute_overlap(
+                    np.expand_dims(np.array(d, dtype=np.float64), axis=0), annotations
+                )
                 assigned_annotation = np.argmax(overlaps, axis=1)
                 max_overlap = overlaps[0, assigned_annotation]
 
-                if max_overlap >= iou_threshold and assigned_annotation not in detected_annotations:
+                if (
+                    max_overlap >= iou_threshold
+                    and assigned_annotation not in detected_annotations
+                ):
                     false_positives.append(0)
                     true_positives.append(1)
                     detected_annotations.append(assigned_annotation)
@@ -204,13 +226,17 @@ def mean_average_precision_for_boxes(ann, pred, iou_threshold=0.5, exclude_not_i
 
         # compute recall and precision
         recall = true_positives / num_annotations
-        precision = true_positives / np.maximum(true_positives + false_positives, np.finfo(np.float64).eps)
+        precision = true_positives / np.maximum(
+            true_positives + false_positives, np.finfo(np.float64).eps
+        )
 
         # compute average precision
         average_precision = _compute_ap(recall, precision)
         average_precisions[label] = average_precision, num_annotations
         if verbose:
-            s1 = "{:30s} | {:.6f} | {:7d}".format(label, average_precision, int(num_annotations))
+            s1 = "{:30s} | {:.6f} | {:7d}".format(
+                label, average_precision, int(num_annotations)
+            )
             print(s1)
 
     present_classes = 0
@@ -224,5 +250,5 @@ def mean_average_precision_for_boxes(ann, pred, iou_threshold=0.5, exclude_not_i
     else:
         mean_ap = 0
     if verbose:
-        print('mAP: {:.6f}'.format(mean_ap))
+        print("mAP: {:.6f}".format(mean_ap))
     return mean_ap, average_precisions
