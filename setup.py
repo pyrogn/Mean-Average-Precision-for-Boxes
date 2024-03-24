@@ -7,4 +7,6 @@ setup(
     author="123",
     packages=find_packages(include=["map_boxes", "map_boxes.*"]),
     install_requires=["pandas", "numpy", "cython"],
+    package_data={"map_boxes": ["compute_overlap.pyx"]},
+    include_package_data=True,
 )
