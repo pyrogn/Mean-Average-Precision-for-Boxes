@@ -15,7 +15,8 @@ try:
         setup_args={"include_dirs": np.get_include()}, reload_support=False
     )
     from .compute_overlap import compute_overlap
-except:
+except Exception as e:
+    print(e)
     print(
         "Couldn't import fast version of function compute_overlap, will use slow one. Check cython intallation"
     )
